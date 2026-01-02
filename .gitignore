@@ -1,0 +1,62 @@
+# Git忽略文件配置
+# Author: 哈雷酱(本小姐)
+
+# ==================== 编译产物 ====================
+# C/C++编译生成的文件
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.exe
+*.out
+simple_player
+
+# ==================== Python ====================
+# Python字节码
+*.pyc
+*.pyo
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python虚拟环境
+venv/
+env/
+ENV/
+.venv
+
+# ==================== 音频文件 ====================
+# 生成的音频文件（可选：如果想保留某些文件，注释掉对应行）
+output/*.wav
+output/*.mp3
+output/*_temp.mp3
+output/batch_*/
+
+# 但保留output目录和README
+!output/
+!output/README.md
+
+# ==================== 临时文件 ====================
+# 系统临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 编辑器临时文件
+.vscode/
+.idea/
+*.sublime-*
+
+# ==================== 日志文件 ====================
+*.log
+logs/
+
+# ==================== 其他 ====================
+# 用户自定义脚本（可选）
+my_*.sh
+test_*.sh
