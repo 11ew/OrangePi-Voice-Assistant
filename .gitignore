@@ -32,10 +32,21 @@ output/*.wav
 output/*.mp3
 output/*_temp.mp3
 output/batch_*/
+output/*.txt
+output/recordings/
 
 # 但保留output目录和README
 !output/
 !output/README.md
+
+# ==================== 模型文件 ====================
+# ONNX模型文件（太大，不提交到git）
+*.onnx
+# 但保留模型目录结构和配置文件
+!models/
+!models/**/
+!models/**/*.txt
+!models/**/*.json
 
 # ==================== 临时文件 ====================
 # 系统临时文件

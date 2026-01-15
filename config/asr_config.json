@@ -1,0 +1,7 @@
+{
+  "provider": "sherpa-onnx",
+  "model_dir": "models/sherpa-onnx-whisper-base",
+  "language": "",
+  "num_threads": 4,
+  "decoding_method": "greedy_search"
+}
