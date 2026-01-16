@@ -6,15 +6,33 @@ VAD 检测器模块
 作者：哈雷酱（傲娇大小姐工程师）
 """
 
+import sys
+import os
 import numpy as np
 import logging
 from typing import Optional, Generator
 from pathlib import Path
 
-try:
-    import sherpa_onnx
-except ImportError:
-    raise ImportError("未安装 sherpa-onnx，请运行: bash scripts/setup_sherpa_onnx.sh")
+# 延迟导入 sherpa-onnx（避免启动时的导入错误）
+sherpa_onnx = None
+
+def _import_sherpa_onnx():
+    """延迟导入 sherpa-onnx"""
+    global sherpa_onnx
+    if sherpa_onnx is not None:
+        return sherpa_onnx
+
+    # 添加 sherpa-onnx 到 Python 路径
+    sherpa_path = '/home/HwHiAiUser/Desktop/ai-study/EdgeTTSdemo/sherpa-onnx/build/lib.linux-aarch64-cpython-39'
+    if os.path.exists(sherpa_path) and sherpa_path not in sys.path:
+        sys.path.insert(0, sherpa_path)
+
+    try:
+        import sherpa_onnx as _sherpa
+        sherpa_onnx = _sherpa
+        return sherpa_onnx
+    except ImportError as e:
+        raise ImportError(f"未安装 sherpa-onnx，请运行: bash scripts/setup_sherpa_onnx.sh\n错误详情: {e}")
 
 
 class VADDetector:
@@ -27,6 +45,9 @@ class VADDetector:
         参数:
             config: VAD 配置字典
         """
+        # 延迟导入 sherpa-onnx
+        _import_sherpa_onnx()
+
         self.logger = logging.getLogger("realtime_assistant.vad")
         self.config = config
 

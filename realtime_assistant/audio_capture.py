@@ -12,10 +12,23 @@ import logging
 from typing import Optional
 import queue
 
-try:
-    import sounddevice as sd
-except ImportError:
-    raise ImportError("未安装 sounddevice，请运行: pip install sounddevice")
+# 延迟导入 sounddevice（避免启动时的导入错误）
+sd = None
+
+def _import_sounddevice():
+    """延迟导入 sounddevice"""
+    global sd
+    if sd is not None:
+        return sd
+
+    try:
+        import sounddevice as _sd
+        sd = _sd
+        return sd
+    except ImportError:
+        raise ImportError("未安装 sounddevice，请运行: pip install sounddevice")
+    except OSError as e:
+        raise OSError(f"PortAudio 库未找到，请安装: sudo apt-get install portaudio19-dev\n错误详情: {e}")
 
 
 class AudioCapture:
@@ -65,6 +78,9 @@ class AudioCapture:
 
     def start(self):
         """启动音频捕获"""
+        # 延迟导入 sounddevice
+        _import_sounddevice()
+
         if self.is_running:
             self.logger.warning("⚠️  音频捕获已在运行")
             return
