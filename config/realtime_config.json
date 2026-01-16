@@ -1,0 +1,38 @@
+{
+  "vad": {
+    "enabled": true,
+    "config_file": "config/vad_config.json"
+  },
+  "asr": {
+    "config_file": "config/asr_config.json",
+    "model_type": "paraformer",
+    "use_streaming": true,
+    "num_threads": 4
+  },
+  "llm": {
+    "api_key": "sk-8729b6bbc81b49bda752005da63185c6",
+    "api_base": "https://api.deepseek.com/v1",
+    "model": "deepseek-chat",
+    "timeout": 10,
+    "max_retries": 3,
+    "system_prompt": "你是一个友好的语音助手，名叫哈雷酱。你的回复要简洁明了，控制在50字以内，适合语音播报。你要用自然、口语化的方式回答问题。"
+  },
+  "tts": {
+    "voice_zh": "zh-CN-XiaoxiaoNeural",
+    "voice_en": "en-US-JennyNeural",
+    "rate": "+0%",
+    "volume": "+0%",
+    "cache_enabled": true
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "chunk_size": 1600,
+    "device": "default"
+  },
+  "system": {
+    "log_level": "INFO",
+    "enable_monitoring": true,
+    "enable_interrupt": true
+  }
+}

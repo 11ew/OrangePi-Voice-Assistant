@@ -1,0 +1,10 @@
+{
+  "model": "models/silero_vad.onnx",
+  "threshold": 0.5,
+  "min_silence_duration": 0.5,
+  "min_speech_duration": 0.25,
+  "window_size": 512,
+  "sample_rate": 16000,
+  "buffer_size_seconds": 30,
+  "energy_threshold": 0.01
+}
