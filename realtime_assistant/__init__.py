@@ -10,12 +10,12 @@
 __version__ = "1.0.0"
 __author__ = "哈雷酱（傲娇大小姐工程师）"
 
-# 导出核心类（暂时注释，等实现后再启用）
-# from .assistant import RealtimeVoiceAssistant
-# from .state_machine import AssistantState, StateMachine
+# 导出核心类
+from .assistant import RealtimeVoiceAssistant
+from .state_machine import AssistantState, StateMachine
 
 __all__ = [
-    # "RealtimeVoiceAssistant",
-    # "AssistantState",
-    # "StateMachine",
+    "RealtimeVoiceAssistant",
+    "AssistantState",
+    "StateMachine",
 ]
