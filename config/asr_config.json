@@ -1,7 +1,7 @@
 {
   "provider": "sherpa-onnx",
-  "model_type": "sense-voice",
-  "model_dir": "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+  "model_type": "paraformer",
+  "model_dir": "models/sherpa-onnx-streaming-paraformer-bilingual-zh-en",
   "language": "auto",
   "num_threads": 4,
   "decoding_method": "greedy_search",
