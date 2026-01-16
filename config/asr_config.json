@@ -1,7 +1,10 @@
 {
   "provider": "sherpa-onnx",
-  "model_dir": "models/sherpa-onnx-whisper-base",
-  "language": "",
+  "model_type": "sense-voice",
+  "model_dir": "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+  "language": "auto",
   "num_threads": 4,
-  "decoding_method": "greedy_search"
+  "decoding_method": "greedy_search",
+  "use_npu": false,
+  "use_itn": true
 }

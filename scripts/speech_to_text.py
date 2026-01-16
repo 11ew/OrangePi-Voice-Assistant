@@ -65,46 +65,80 @@ def create_recognizer(config):
 
     print(f"📦 加载模型: {model_dir}", file=sys.stderr)
 
-    # 根据模型目录确定文件名前缀
-    if "tiny.en" in str(model_dir):
-        # 英文专用模型
-        encoder_file = "tiny.en-encoder.onnx"
-        decoder_file = "tiny.en-decoder.onnx"
-        tokens_file = "tiny.en-tokens.txt"
-        language = "en"  # 英文模型强制使用英文
-    elif "base" in str(model_dir):
-        # Base 多语言模型（使用 int8 量化版本，速度更快）
-        encoder_file = "base-encoder.int8.onnx"
-        decoder_file = "base-decoder.int8.onnx"
-        tokens_file = "base-tokens.txt"
-        # 使用空字符串让 Whisper 自动检测语言
-        language = config.get("language", "")  # 空字符串表示自动检测
+    # 检查模型类型
+    model_type = config.get("model_type", "whisper")
+
+    if model_type == "sense-voice" or "sense-voice" in str(model_dir):
+        # SenseVoice 模型
+        print(f"🎯 使用 SenseVoice 模型", file=sys.stderr)
+
+        model_file = str(model_dir / "model.onnx")
+        tokens_file = str(model_dir / "tokens.txt")
+
+        # 检查 NPU 支持
+        use_npu = config.get("use_npu", False)
+        if use_npu:
+            print(f"⚡ 启用 NPU 加速 (设备 ID: {config.get('npu_device_id', 0)})", file=sys.stderr)
+            provider = "cann"
+        else:
+            print(f"💻 使用 CPU 推理", file=sys.stderr)
+            provider = "cpu"
+
+        # 使用 from_sense_voice 类方法创建识别器
+        recognizer = sherpa_onnx.OfflineRecognizer.from_sense_voice(
+            model=model_file,
+            tokens=tokens_file,
+            num_threads=config.get("num_threads", 4),
+            provider=provider,
+            debug=False,
+        )
+
+        print(f"✅ SenseVoice 模型加载完成", file=sys.stderr)
+
     else:
-        # Tiny 多语言模型（默认）
-        encoder_file = "tiny-encoder.onnx"
-        decoder_file = "tiny-decoder.onnx"
-        tokens_file = "tiny-tokens.txt"
-        # 使用空字符串让 Whisper 自动检测语言
-        language = config.get("language", "")  # 空字符串表示自动检测
+        # Whisper 模型
+        print(f"🎯 使用 Whisper 模型", file=sys.stderr)
 
-    if language:
-        print(f"🌐 识别语言: {language}", file=sys.stderr)
-    else:
-        print(f"🌐 识别语言: 自动检测", file=sys.stderr)
+        # 根据模型目录确定文件名前缀
+        if "tiny.en" in str(model_dir):
+            # 英文专用模型
+            encoder_file = "tiny.en-encoder.onnx"
+            decoder_file = "tiny.en-decoder.onnx"
+            tokens_file = "tiny.en-tokens.txt"
+            language = "en"  # 英文模型强制使用英文
+        elif "base" in str(model_dir):
+            # Base 多语言模型（使用 int8 量化版本，速度更快）
+            encoder_file = "base-encoder.int8.onnx"
+            decoder_file = "base-decoder.int8.onnx"
+            tokens_file = "base-tokens.txt"
+            # 使用空字符串让 Whisper 自动检测语言
+            language = config.get("language", "")  # 空字符串表示自动检测
+        else:
+            # Tiny 多语言模型（默认）
+            encoder_file = "tiny-encoder.onnx"
+            decoder_file = "tiny-decoder.onnx"
+            tokens_file = "tiny-tokens.txt"
+            # 使用空字符串让 Whisper 自动检测语言
+            language = config.get("language", "")  # 空字符串表示自动检测
 
-    # 使用 from_whisper 类方法创建识别器
-    recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
-        encoder=str(model_dir / encoder_file),
-        decoder=str(model_dir / decoder_file),
-        tokens=str(model_dir / tokens_file),
-        language=language,
-        task="transcribe",
-        num_threads=config.get("num_threads", 4),
-        decoding_method=config.get("decoding_method", "greedy_search"),
-        debug=False,
-    )
+        if language:
+            print(f"🌐 识别语言: {language}", file=sys.stderr)
+        else:
+            print(f"🌐 识别语言: 自动检测", file=sys.stderr)
 
-    print(f"✅ 模型加载完成", file=sys.stderr)
+        # 使用 from_whisper 类方法创建识别器
+        recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
+            encoder=str(model_dir / encoder_file),
+            decoder=str(model_dir / decoder_file),
+            tokens=str(model_dir / tokens_file),
+            language=language,
+            task="transcribe",
+            num_threads=config.get("num_threads", 4),
+            decoding_method=config.get("decoding_method", "greedy_search"),
+            debug=False,
+        )
+
+        print(f"✅ Whisper 模型加载完成", file=sys.stderr)
 
     return recognizer
 
