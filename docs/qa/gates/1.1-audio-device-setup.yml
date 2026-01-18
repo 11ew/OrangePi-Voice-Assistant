@@ -1,0 +1,8 @@
+schema: 1
+story: '1.1'
+gate: PASS
+status_reason: '所有验收标准已通过，音频设备配置和测试完成。录音和播放功能正常，音质清晰无杂音。'
+reviewer: 'Quinn'
+updated: '2026-01-18T16:45:00Z'
+top_issues: []
+waiver: { active: false }
