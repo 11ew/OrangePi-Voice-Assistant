@@ -12,9 +12,17 @@
 
 Orange Pi AI Pro 音频配置完全指南。详细说明如何配置录音设备（麦克风）和播放设备（耳机），包括 ALSA 配置、音量设置、设备测试和常见问题排查。这是实时语音助手系统的基础配置文档。
 
+### [phase2-completion-report.md](./phase2-completion-report.md)
+
+Phase 2 完成报告（v1.0），记录 ASR 集成的完整过程。**Phase 2 已完成**：包含 Task 2.1（ASR 模型下载和配置）、Task 2.2（ASR 功能测试）、Task 2.3（录音 + ASR 集成测试）的详细内容、遇到的问题和解决方案、性能数据对比（INT8 vs 完整模型）、最佳实践总结。完成日期：2026-01-18。
+
+### [phase3-completion-report.md](./phase3-completion-report.md)
+
+Phase 3 完成报告（v1.0），记录 VAD 集成的完整过程。**Phase 3 已完成**：包含 Task 3.1（VAD 模型下载和配置）、Task 3.2（VAD 功能测试）、Task 3.3（VAD + 录音集成测试）的详细内容。**关键发现**：发现并解决了 Orange Pi 录音格式 bug（必须使用 RAW 格式），开发了两种 VAD 算法（Silero VAD + 基于能量的 VAD）适应不同环境，成功实现自动语音分割功能（检测到 3 个语音片段）。完成日期：2026-01-18。
+
 ### [brownfield-architecture.md](./brownfield-architecture.md)
 
-Brownfield 架构文档（v1.1），记录项目的真实状态。**Phase 1 已完成更新**：包含关键文件列表、技术栈分析（LLM、TTS、音频设备已验证）、项目结构说明、技术债务清单、已知问题、集成点、开发设置和故障排查指南。包含 Phase 1 完成后的性能数据和下一步行动指南。
+Brownfield 架构文档（v1.3），记录项目的真实状态。**Phase 1、2、3 已完成更新**：包含关键文件列表、技术栈分析（LLM、TTS、音频设备、ASR、VAD 已验证）、项目结构说明、技术债务清单、已知问题（包括录音格式 bug）、集成点、开发设置和故障排查指南。包含 Phase 1、2、3 完成后的性能数据和下一步行动指南（Phase 4: 系统集成）。
 
 ### [implementation-plan.md](./implementation-plan.md)
 
@@ -116,16 +124,27 @@ qa/gates/*.yml (质量门控)
 
 ## 📊 文档统计
 
-- **总文档数**：7 个 Markdown 文档 + 1 个 YAML 文件
-- **根目录文档**：6 个（包括索引）
+- **总文档数**：9 个 Markdown 文档 + 1 个 YAML 文件
+- **根目录文档**：8 个（包括索引和 Phase 2、Phase 3 报告）
 - **Stories**：1 个（已完成）
 - **质量门控**：1 个（PASS）
+- **完成报告**：3 个（Phase 1、Phase 2、Phase 3）
 
-### 项目进度
+### 项目进度（2026-01-18 更新）
 
 - ✅ **Phase 1 完成**：音频设备、LLM、TTS 已验证
-- 🔲 **Phase 2 待开始**：ASR 集成
-- 📊 **完成率**：Story 1/N 完成
+- ✅ **Phase 2 完成**：ASR 集成和测试完成（Paraformer INT8）
+- ✅ **Phase 3 完成**：VAD 集成完成（Silero VAD + 能量 VAD）
+- 🔲 **Phase 4 待开始**：系统集成（异步编排、端到端测试、打断机制）
+- 🔲 **Phase 5 待开始**：优化和完善
+- 📊 **完成率**：60% (3/5 个 Phase 已完成)
+
+### Phase 3 关键成果
+
+- ✅ 发现并解决 Orange Pi 录音格式 bug（必须使用 RAW 格式）
+- ✅ 开发两种 VAD 算法（Silero VAD 适合安静环境，能量 VAD 适合有底噪环境）
+- ✅ 成功实现自动语音分割功能（检测到 3 个语音片段）
+- ✅ 详细记录所有问题和解决方案到 `docs/AUDIO_SETUP.md`
 
 ---
 
@@ -147,8 +166,8 @@ qa/gates/*.yml (质量门控)
 
 **索引创建者：** 哈雷酱（傲娇大小姐工程师）
 **创建日期：** 2026-01-18
-**最后更新：** 2026-01-18 16:50
-**索引版本：** v1.1 - Phase 1 完成后更新
+**最后更新：** 2026-01-18 23:30
+**索引版本：** v1.3 - Phase 3 完成后更新
 
 ---
 

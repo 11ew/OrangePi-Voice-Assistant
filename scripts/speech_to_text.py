@@ -68,7 +68,63 @@ def create_recognizer(config):
     # 检查模型类型
     model_type = config.get("model_type", "whisper")
 
-    if model_type == "sense-voice" or "sense-voice" in str(model_dir):
+    if model_type == "paraformer" or "paraformer" in str(model_dir):
+        # Paraformer 流式模型
+        print(f"🎯 使用 Paraformer 流式模型", file=sys.stderr)
+
+        # Paraformer 模型文件
+        # 可以通过环境变量选择使用完整模型还是 INT8 模型
+        import os
+        use_int8 = os.environ.get('USE_INT8_MODEL', 'true').lower() == 'true'  # 默认使用 INT8
+
+        if use_int8:
+            # 使用 INT8 量化模型（速度快）
+            encoder_file = str(model_dir / "encoder.int8.onnx")
+            decoder_file = str(model_dir / "decoder.int8.onnx")
+            print(f"⚡ 使用 INT8 量化模型（速度优先）", file=sys.stderr)
+        else:
+            # 使用完整模型（准确率高）
+            encoder_file = str(model_dir / "encoder.onnx")
+            decoder_file = str(model_dir / "decoder.onnx")
+            print(f"🎯 使用完整模型（准确率优先）", file=sys.stderr)
+
+        tokens_file = str(model_dir / "tokens.txt")
+
+        # 检查文件是否存在
+        if not Path(encoder_file).exists():
+            print(f"⚠️  模型文件不存在: {encoder_file}", file=sys.stderr)
+            # 尝试使用另一个版本
+            if use_int8:
+                print(f"⚠️  INT8 模型不存在，使用完整模型", file=sys.stderr)
+                encoder_file = str(model_dir / "encoder.onnx")
+                decoder_file = str(model_dir / "decoder.onnx")
+            else:
+                print(f"⚠️  完整模型不存在，使用 INT8 量化模型", file=sys.stderr)
+                encoder_file = str(model_dir / "encoder.int8.onnx")
+                decoder_file = str(model_dir / "decoder.int8.onnx")
+
+        print(f"💻 使用 CPU 推理", file=sys.stderr)
+        print(f"📁 Encoder: {Path(encoder_file).name}", file=sys.stderr)
+        print(f"📁 Decoder: {Path(decoder_file).name}", file=sys.stderr)
+
+        # 使用 OnlineRecognizer.from_paraformer 创建流式识别器
+        recognizer = sherpa_onnx.OnlineRecognizer.from_paraformer(
+            tokens=tokens_file,
+            encoder=encoder_file,
+            decoder=decoder_file,
+            num_threads=config.get("num_threads", 4),
+            sample_rate=16000,
+            feature_dim=80,
+            decoding_method=config.get("decoding_method", "greedy_search"),
+            debug=False,
+        )
+
+        print(f"✅ Paraformer 流式模型加载完成", file=sys.stderr)
+
+        # 返回识别器和类型标记
+        return recognizer, "online"
+
+    elif model_type == "sense-voice" or "sense-voice" in str(model_dir):
         # SenseVoice 模型
         print(f"🎯 使用 SenseVoice 模型", file=sys.stderr)
 
@@ -140,7 +196,10 @@ def create_recognizer(config):
 
         print(f"✅ Whisper 模型加载完成", file=sys.stderr)
 
-    return recognizer
+        # 返回识别器和类型标记
+        return recognizer, "offline"
+
+    return recognizer, "offline"
 
 
 def transcribe_audio(audio_file, config=None):
@@ -167,7 +226,7 @@ def transcribe_audio(audio_file, config=None):
     print(f"🎤 开始识别: {audio_path}", file=sys.stderr)
 
     # 创建识别器
-    recognizer = create_recognizer(config)
+    recognizer, recognizer_type = create_recognizer(config)
 
     # 读取音频
     try:
@@ -191,10 +250,21 @@ def transcribe_audio(audio_file, config=None):
     stream.accept_waveform(sample_rate, audio_data)
 
     # 执行识别
-    recognizer.decode_stream(stream)
+    if recognizer_type == "online":
+        # 流式识别：输入完成后需要调用 input_finished
+        stream.input_finished()  # 告诉识别器输入已完成
 
-    # 获取结果
-    result = stream.result.text
+        # 持续解码直到识别完成
+        while recognizer.is_ready(stream):
+            recognizer.decode_stream(stream)
+
+        # 获取最终结果
+        result = recognizer.get_result(stream)
+    else:
+        # 离线识别
+        recognizer.decode_stream(stream)
+        # 获取结果
+        result = stream.result.text
 
     if result:
         print(f"✅ 识别结果: {result}", file=sys.stderr)

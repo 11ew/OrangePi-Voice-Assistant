@@ -246,7 +246,91 @@ arecord \
 
 ## 常见问题排查
 
-### 问题 1：录音无声音或噪音
+### ⚠️ 问题 1：使用 WAV 格式录音失败（音量极低或无声）
+
+**🔴 重要：这是一个已知的严重问题！**
+
+**症状：**
+- 使用 `-t wav` 参数录音时，音频文件音量极低（最大值只有 1-10）
+- 播放录音听不到声音或几乎听不到
+- 但使用 `-t raw` 格式录音正常
+
+**问题示例：**
+```bash
+# ❌ 错误：使用 WAV 格式录音会失败
+arecord -D plughw:0,1 -f S16_LE -r 48000 -c 1 -t wav -d 5 test.wav
+# 结果：音频最大值只有 1，几乎无声
+
+# ✅ 正确：使用 RAW 格式录音成功
+arecord -D plughw:0,1 -f S16_LE -r 48000 -c 1 -t raw -d 5 test.pcm
+# 结果：音频最大值 3000+，正常
+```
+
+**根本原因：**
+- Orange Pi AI Pro 的 ALSA 驱动在使用 WAV 格式时存在 bug
+- 直接使用 `-t wav` 会导致音频数据写入异常
+- 必须使用 `-t raw` 格式录音，然后手动转换为 WAV
+
+**✅ 正确的录音流程：**
+
+```bash
+# 步骤 1: 使用 RAW 格式录音
+arecord -D plughw:0,1 -f S16_LE -r 48000 -c 1 -t raw -d 5 test.pcm
+
+# 步骤 2: 使用 ffmpeg 转换为 WAV 格式
+ffmpeg -f s16le -ar 48000 -ac 1 -i test.pcm -y test.wav
+
+# 步骤 3: 播放测试
+aplay -Dhw:ascend310b test.wav
+```
+
+**验证音频质量：**
+```bash
+# 检查音频文件的音量
+python3 -c "
+import wave
+import numpy as np
+
+with wave.open('test.wav', 'rb') as wf:
+    audio_data = wf.readframes(wf.getnframes())
+    samples = np.frombuffer(audio_data, dtype=np.int16)
+    max_val = np.max(np.abs(samples))
+    print(f'音频最大值: {max_val}')
+
+    if max_val < 100:
+        print('❌ 音频音量异常低！')
+    elif max_val < 1000:
+        print('⚠️  音频音量较低')
+    else:
+        print('✅ 音频音量正常')
+"
+```
+
+**在脚本中的正确实现：**
+```bash
+#!/bin/bash
+# 正确的录音脚本示例
+
+# 1. 设置音量
+amixer set Capture 10
+amixer set Deviceid 2
+
+# 2. 录音（使用 raw 格式）
+PCM_FILE="output/record.pcm"
+WAV_FILE="output/record.wav"
+
+arecord -D plughw:0,1 -f S16_LE -r 48000 -c 1 -t raw -d 5 $PCM_FILE
+
+# 3. 转换为 WAV
+ffmpeg -f s16le -ar 48000 -ac 1 -i $PCM_FILE -y $WAV_FILE
+
+# 4. 播放
+aplay -Dhw:ascend310b $WAV_FILE
+```
+
+---
+
+### 问题 2：录音无声音或噪音
 
 **症状：** 录音文件无声音或全是噪音
 
@@ -254,6 +338,7 @@ arecord \
 1. 设备标识错误（使用了 `default` 或 `hw:0,0`）
 2. 采样率不匹配
 3. 麦克风音量过低
+4. **使用了 `-t wav` 格式（见问题 1）**
 
 **解决方案：**
 
@@ -264,10 +349,13 @@ arecord -l
 # 2. 设置麦克风音量
 amixer set Capture 10
 
-# 3. 测试录音（5秒）
-arecord -D plughw:0,1 -f S16_LE -r 16000 -c 1 -t wav -d 5 test.wav
+# 3. 使用 RAW 格式测试录音（5秒）
+arecord -D plughw:0,1 -f S16_LE -r 48000 -c 1 -t raw -d 5 test.pcm
 
-# 4. 播放测试
+# 4. 转换为 WAV
+ffmpeg -f s16le -ar 48000 -ac 1 -i test.pcm -y test.wav
+
+# 5. 播放测试
 aplay -Dhw:ascend310b test.wav
 ```
 
