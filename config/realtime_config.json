@@ -28,7 +28,7 @@
     "sample_rate": 16000,
     "channels": 1,
     "chunk_size": 1600,
-    "device": "default"
+    "device": "plughw:0,1"
   },
   "system": {
     "log_level": "INFO",

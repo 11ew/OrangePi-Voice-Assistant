@@ -4,6 +4,7 @@
 音频捕获模块
 功能：实时捕获麦克风音频，提供异步音频流
 作者：哈雷酱（傲娇大小姐工程师）
+实现方式：使用 arecord 持续录音 + 管道读取（稳定可靠）
 """
 
 import asyncio
@@ -11,28 +12,12 @@ import numpy as np
 import logging
 from typing import Optional
 import queue
-
-# 延迟导入 sounddevice（避免启动时的导入错误）
-sd = None
-
-def _import_sounddevice():
-    """延迟导入 sounddevice"""
-    global sd
-    if sd is not None:
-        return sd
-
-    try:
-        import sounddevice as _sd
-        sd = _sd
-        return sd
-    except ImportError:
-        raise ImportError("未安装 sounddevice，请运行: pip install sounddevice")
-    except OSError as e:
-        raise OSError(f"PortAudio 库未找到，请安装: sudo apt-get install portaudio19-dev\n错误详情: {e}")
+import subprocess
+import threading
 
 
 class AudioCapture:
-    """音频捕获器"""
+    """音频捕获器（使用 arecord 方式）"""
 
     def __init__(self, config: dict):
         """
@@ -47,60 +32,109 @@ class AudioCapture:
         self.sample_rate = config.get("sample_rate", 16000)
         self.channels = config.get("channels", 1)
         self.chunk_size = config.get("chunk_size", 1600)  # 100ms @ 16kHz
-        self.device = config.get("device", "default")
+        self.device = config.get("device", "plughw:0,1")  # 默认使用 plughw:0,1
 
         # 音频队列
         self.audio_queue = queue.Queue()
-        self.stream = None
+        self.process = None
+        self.reader_thread = None
         self.is_running = False
 
-        self.logger.info("🎙️  音频捕获器初始化完成")
+        self.logger.info("🎙️  音频捕获器初始化完成（arecord 方式）")
         self.logger.info(f"   - 采样率: {self.sample_rate} Hz")
         self.logger.info(f"   - 声道数: {self.channels}")
         self.logger.info(f"   - 块大小: {self.chunk_size} 样本")
+        self.logger.info(f"   - 设备: {self.device}")
 
-    def _audio_callback(self, indata, frames, time_info, status):
+    def _read_loop(self):
         """
-        音频回调函数
-
-        参数:
-            indata: 输入音频数据
-            frames: 帧数
-            time_info: 时间信息
-            status: 状态
+        持续读取音频数据的线程函数
         """
-        if status:
-            self.logger.warning(f"⚠️  音频状态: {status}")
+        # 计算每次读取的字节数
+        # int16 = 2 bytes per sample
+        bytes_per_chunk = self.chunk_size * 2 * self.channels
 
-        # 将音频数据放入队列
-        audio_data = indata.copy().flatten()
-        self.audio_queue.put(audio_data)
+        self.logger.debug(f"读取线程启动，每次读取 {bytes_per_chunk} 字节")
+
+        try:
+            while self.is_running:
+                # 从 arecord 的 stdout 读取数据
+                chunk = self.process.stdout.read(bytes_per_chunk)
+
+                if not chunk:
+                    # 如果读取到空数据，说明进程结束了
+                    self.logger.warning("⚠️  arecord 进程意外结束")
+                    break
+
+                # 转换为 numpy 数组
+                audio_data = np.frombuffer(chunk, dtype=np.int16)
+
+                # 如果是双声道，转换为单声道（取平均）
+                if self.channels == 2:
+                    audio_data = audio_data.reshape(-1, 2)
+                    audio_data = np.mean(audio_data, axis=1).astype(np.int16)
+
+                # 转换为 float32，范围 [-1.0, 1.0]
+                audio_data = audio_data.astype(np.float32) / 32768.0
+
+                # 放入队列
+                self.audio_queue.put(audio_data)
+
+        except Exception as e:
+            if self.is_running:
+                self.logger.error(f"❌ 读取线程错误: {e}")
+                import traceback
+                traceback.print_exc()
+
+        self.logger.debug("读取线程结束")
 
     def start(self):
         """启动音频捕获"""
-        # 延迟导入 sounddevice
-        _import_sounddevice()
-
         if self.is_running:
             self.logger.warning("⚠️  音频捕获已在运行")
             return
 
         self.logger.info("🎙️  启动音频捕获...")
 
-        # 创建音频流
-        self.stream = sd.InputStream(
-            device=self.device if self.device != "default" else None,
-            channels=self.channels,
-            samplerate=self.sample_rate,
-            blocksize=self.chunk_size,
-            dtype=np.float32,
-            callback=self._audio_callback
-        )
+        try:
+            # 启动 arecord 进程
+            # -D: 设备
+            # -f: 格式 (S16_LE = signed 16-bit little-endian)
+            # -r: 采样率
+            # -c: 声道数
+            # -t: 类型 (raw = 原始 PCM 数据)
+            cmd = [
+                'arecord',
+                '-D', self.device,
+                '-f', 'S16_LE',
+                '-r', str(self.sample_rate),
+                '-c', str(self.channels),
+                '-t', 'raw'
+            ]
 
-        self.stream.start()
-        self.is_running = True
+            self.logger.debug(f"启动命令: {' '.join(cmd)}")
 
-        self.logger.info("✅ 音频捕获已启动")
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                bufsize=self.chunk_size * 2 * self.channels
+            )
+
+            # 启动读取线程
+            self.is_running = True
+            self.reader_thread = threading.Thread(target=self._read_loop, daemon=True)
+            self.reader_thread.start()
+
+            self.logger.info("✅ 音频捕获已启动")
+
+        except Exception as e:
+            self.logger.error(f"❌ 启动音频捕获失败: {e}")
+            self.is_running = False
+            if self.process:
+                self.process.terminate()
+                self.process = None
+            raise
 
     def stop(self):
         """停止音频捕获"""
@@ -109,12 +143,30 @@ class AudioCapture:
 
         self.logger.info("🛑 停止音频捕获...")
 
-        if self.stream:
-            self.stream.stop()
-            self.stream.close()
-            self.stream = None
-
+        # 设置停止标志
         self.is_running = False
+
+        # 终止 arecord 进程
+        if self.process:
+            try:
+                self.process.terminate()
+                self.process.wait(timeout=2.0)
+            except subprocess.TimeoutExpired:
+                self.logger.warning("⚠️  arecord 进程未响应，强制终止")
+                self.process.kill()
+                self.process.wait()
+            except Exception as e:
+                self.logger.error(f"❌ 终止进程时出错: {e}")
+
+            self.process = None
+
+        # 等待读取线程结束
+        if self.reader_thread and self.reader_thread.is_alive():
+            self.reader_thread.join(timeout=2.0)
+            if self.reader_thread.is_alive():
+                self.logger.warning("⚠️  读取线程未能正常结束")
+
+        self.reader_thread = None
 
         # 清空队列
         while not self.audio_queue.empty():

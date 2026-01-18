@@ -1,14 +1,46 @@
 # 🎙️ 实时语音助手系统设计方案
 
 > **作者：** 哈雷酱（傲娇大小姐工程师）
-> **版本：** 1.0.0
-> **日期：** 2026-01-17
+> **版本：** 1.0.1
+> **日期：** 2026-01-18
 > **状态：** 开发中
+
+---
+
+## ⚠️ 项目特殊说明
+
+### 系统权限和网络配置
+
+1. **系统权限密码**
+   - 如果需要 sudo 权限，密码为：`Mind@123`
+   - 某些系统配置和音频设置需要 root 权限
+
+2. **网络配置（VPN）**
+   - 如果需要访问 GitHub 或查找技术资料时使用
+   - 主要用于：
+     - 访问 GitHub（下载代码、查看文档、下载模型）
+     - 查找技术资料（Stack Overflow、技术博客等）
+   - 使用以下终端命令：
+     ```bash
+     vpn        # 开启 VPN
+     vpntest    # 测试 VPN 连接
+     vpnoff     # 关闭 VPN（⚠️ 用完及时关闭，避免网速过慢）
+     ```
+   - **⚠️ 重要：** VPN 会降低网速，用完后立即关闭
+   - **注意：** DeepSeek API 和 Edge-TTS 是国内可访问的服务，不需要 VPN
+
+3. **⚠️ 音频测试特别注意**
+   - **本项目音频测试必须由用户亲自测试并反馈结果**
+   - **不得由 AI 助手自行测试，可能会误判**
+   - **所有音频功能以用户实际测试结果为准**
+   - AI 助手只能提供测试指导和问题排查建议
+   - 用户需要反馈具体的测试结果（成功/失败/具体现象）
 
 ---
 
 ## 📋 目录
 
+- [项目特殊说明](#项目特殊说明)
 - [系统概述](#系统概述)
 - [技术架构](#技术架构)
 - [核心模块](#核心模块)
@@ -301,7 +333,8 @@ requests             # HTTP 请求（同步）
 
 ### 快速开始
 
-1. **安装依赖**
+#### 1. 安装依赖
+
 ```bash
 # 安装额外依赖
 pip install -r requirements_realtime.txt
@@ -310,21 +343,74 @@ pip install -r requirements_realtime.txt
 bash scripts/setup_sherpa_onnx.sh
 ```
 
-2. **下载 VAD 模型**
+#### 2. 下载 VAD 模型
+
 ```bash
 # 下载 Silero VAD 模型
 wget https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx \
   -O models/silero_vad.onnx
 ```
 
-3. **配置系统**
-```bash
-# 编辑配置文件
-vim config/realtime_config.json
-vim config/vad_config.json
+#### 3. 音频设备配置（⚠️ 重要！）
+
+**Orange Pi AI Pro 音频设备配置：**
+
+在启动实时语音助手前，必须正确配置音频设备。详细配置指南请参考：[音频配置完全指南](AUDIO_SETUP.md)
+
+**快速配置步骤：**
+
+1. **插入耳机**：将 3.5mm 耳机插入开发板的耳机接口
+
+2. **测试音频设备**：
+   ```bash
+   # 查看录音设备
+   arecord -l
+   # 应显示：card 0: ascend310b, device 1
+
+   # 查看播放设备
+   aplay -l
+   # 应显示：card 0: ascend310b, device 0
+   ```
+
+3. **设置音量**：
+   ```bash
+   amixer set Capture 10   # 设置录音音量
+   amixer set Playback 10  # 设置播放音量
+   amixer set Deviceid 2   # 设置设备ID为2（耳机）
+   ```
+
+4. **测试录音和播放**：
+   ```bash
+   # 录音5秒
+   arecord -D plughw:0,1 -f S16_LE -r 16000 -c 1 -t wav -d 5 test.wav
+
+   # 播放测试
+   aplay -Dhw:ascend310b test.wav
+   ```
+
+**关键配置参数：**
+- **录音设备：** `plughw:0,1`（支持采样率自动转换）
+- **播放设备：** `hw:ascend310b` 或 `hw:0,0`
+- **采样率：** 16000 Hz（ASR 模型要求）
+- **声道数：** 1（单声道）
+
+#### 4. 配置系统
+
+编辑 `config/realtime_config.json`，确保音频配置正确：
+
+```json
+{
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "chunk_size": 1600,
+    "device": "plughw:0,1"  // ⚠️ 重要：必须使用 plughw:0,1
+  }
+}
 ```
 
-4. **启动助手**
+#### 5. 启动助手
+
 ```bash
 # 运行实时语音助手
 python3 realtime_assistant_main.py
@@ -350,6 +436,12 @@ python3 realtime_assistant_main.py
     "timeout": 10,                      // 超时时间
     "max_retries": 3                    // 最大重试次数
   },
+  "audio": {
+    "sample_rate": 16000,               // 采样率 16kHz
+    "channels": 1,                      // 单声道
+    "chunk_size": 1600,                 // 块大小（100ms @ 16kHz）
+    "device": "plughw:0,1"              // ⚠️ 录音设备（必须使用 plughw:0,1）
+  },
   "system": {
     "log_level": "INFO",                // 日志级别
     "enable_monitoring": true,          // 启用性能监控
@@ -371,6 +463,20 @@ python3 realtime_assistant_main.py
 
 ### 常见问题
 
+**Q: 录音无声音或全是噪音？**
+A:
+1. 检查音频设备配置是否正确（必须使用 `plughw:0,1`）
+2. 检查麦克风音量：`amixer set Capture 10`
+3. 测试录音：`arecord -D plughw:0,1 -f S16_LE -r 16000 -c 1 -t wav -d 5 test.wav`
+4. 详细排查请参考：[音频配置完全指南](AUDIO_SETUP.md)
+
+**Q: 播放无声音？**
+A:
+1. 确保耳机已插入 3.5mm 接口
+2. 检查播放音量：`amixer set Playback 10`
+3. 设置设备ID：`amixer set Deviceid 2`
+4. 测试播放：`aplay -Dhw:ascend310b test.wav`
+
 **Q: VAD 误检测怎么办？**
 A: 调整 `threshold` 和 `energy_threshold` 参数，提高检测阈值可以减少误检。
 
@@ -382,6 +488,12 @@ A: 检查网络连接，增加 `timeout` 参数，或使用降级方案。
 
 **Q: 如何自定义语音？**
 A: 修改 `config/realtime_config.json` 中的 `voice_zh` 和 `voice_en` 参数。
+
+**Q: 设备忙碌（Device or resource busy）？**
+A:
+1. 查找占用进程：`lsof /dev/snd/*`
+2. 杀死占用进程：`kill -9 <PID>`
+3. 或重启 ALSA：`sudo systemctl restart alsa-restore`
 
 ---
 
