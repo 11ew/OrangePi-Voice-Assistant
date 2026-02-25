@@ -49,6 +49,44 @@ vpntest
 vpnoff
 ```
 
+### ⚠️ 重要：AI 助手使用 VPN 的注意事项
+
+**问题：** AI 助手（Claude Code）通过 Bash 工具执行命令时，无法直接使用 `vpn`、`vpnoff` 等 alias 命令。
+
+**原因：**
+- `vpn`、`vpnoff` 等命令是在 `~/.bashrc` 中定义的 **alias 别名**
+- Bash 工具使用的是**非交互式 shell**，不会自动加载 `~/.bashrc` 中的 alias
+- 用户在终端中可以正常使用这些命令，但 AI 助手需要使用完整命令
+
+**解决方案：**
+
+AI 助手应该使用以下完整命令：
+
+```bash
+# 开启 VPN（AI 助手使用）
+export http_proxy="http://127.0.0.1:7897" https_proxy="http://127.0.0.1:7897" all_proxy="socks5://127.0.0.1:7897" && echo "✅ VPN 代理已启用！"
+
+# 关闭 VPN（AI 助手使用）
+unset http_proxy https_proxy all_proxy && echo "❌ VPN 代理已关闭！"
+
+# 测试 VPN 连接（AI 助手使用）
+curl --proxy http://127.0.0.1:7897 --connect-timeout 10 http://www.google.com 2>&1 | head -20
+
+# 查看 VPN 状态（AI 助手使用）
+echo "当前 VPN 代理设置："; echo "  HTTP: $http_proxy"; echo "  HTTPS: $https_proxy"; echo "  ALL: $all_proxy"
+```
+
+**用户使用：**
+
+用户在终端中可以直接使用简短命令：
+```bash
+vpn        # 开启 VPN
+vpntest    # 测试连接
+vpnoff     # 关闭 VPN
+```
+
+**alias 定义位置：** `~/.bashrc`
+
 ### 需要 VPN 的场景
 
 | 场景 | 说明 | 是否需要 VPN |

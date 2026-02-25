@@ -16,6 +16,7 @@
 | 2026-01-18 | 1.0.0 | 初始版本创建 | 哈雷酱 |
 | 2026-01-18 | 1.1.0 | Phase 2 完成后更新 | 哈雷酱 |
 | 2026-01-18 | 1.2.0 | Phase 3 完成后更新 | 哈雷酱 |
+| 2026-01-19 | 1.3.0 | VAD 优化研究完成后更新 | 哈雷酱 |
 
 ---
 
@@ -324,8 +325,17 @@ EdgeTTSdemo 是一个基于 Orange Pi AI Pro (Ascend 310B) 开发板的实时语
 - ✅ Silero VAD 模型集成成功
 - ✅ 发现并解决录音格式问题（WAV bug）
 - ✅ 开发基于能量的 VAD 算法
-- ✅ 成功实现自动语音分割（检测到 3 个片段）
-- ✅ 最佳配置：threshold=0.3, energy_threshold=100
+- ✅ 成功实现自动语音分割
+- ✅ VAD 优化研究完成（2026-01-19）
+  - RNNoise 降噪研究（结论：不推荐使用）
+  - 音量反向特性发现（音量值越小，信号越强）
+  - sherpa-onnx 框架深度分析
+  - 最佳配置：threshold=0.2, min_silence_duration=0.5s
+
+**详细报告：**
+- [Phase 3 完成报告](phase3-completion-report.md)
+- [VAD 优化研究报告](vad-optimization-report.md) ⭐ 新增
+- [VAD 任务总结报告](vad-task-summary.md) ⭐ 新增
 
 ### Phase 4: 系统集成（第 6-7 周）
 
