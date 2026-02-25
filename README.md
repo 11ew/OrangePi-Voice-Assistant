@@ -1,33 +1,401 @@
-# 🎤 Edge-TTS 文字转语音完整教程
+# 🎤 EdgeTTSdemo - 实时语音助手系统
 
 > **作者：** 哈雷酱（傲娇大小姐工程师）
-> **适合人群：** 刚学完STM32，开始学习Linux的嵌入式开发者
-> **硬件平台：** Orange Pi Ascend 310B（也适用于其他Linux平台）
+> **项目类型：** 完全离线实时语音助手
+> **硬件平台：** Orange Pi AI Pro (Ascend 310B)
+> **当前状态：** Phase 3 完成，准备进入 Phase 4
 
 ---
 
 ## 🎯 项目简介
 
-这是一个**简单易用的Edge-TTS文字转语音工具**，提供交互式界面，让你轻松完成文本转语音！
+**EdgeTTSdemo** 是一个运行在 Orange Pi AI Pro 上的**完全离线实时语音助手系统**。
 
-### 核心功能
+### 核心特性
 
-- ✅ **交互式界面**：菜单式操作，无需记命令
-- ✅ **文字转语音**：使用微软Edge-TTS引擎，支持6种中文语音
-- ✅ **参数可调**：支持调整语速、音量、音调
-- ✅ **音频播放**：使用aplay命令，稳定可靠，支持3.5mm耳机输出
-- ✅ **格式转换**：自动转换为单声道WAV格式，适配嵌入式设备
+- 🎤 **实时语音识别**：基于 Paraformer 模型，识别准确率优秀
+- 🗣️ **智能对话**：集成 DeepSeek LLM，响应速度快
+- 🔊 **语音合成**：使用 Edge-TTS，支持多种中文语音
+- 🎯 **语音活动检测**：Silero VAD，自动分割语音片段
+- 💻 **边缘计算**：完全离线运行，保护隐私
+- ⚡ **低延迟**：优化的实时处理流程
 
 ### 项目特点
 
-- 🎓 **教学导向**：详细注释，适合初学者
-- 🏗️ **架构简化**：使用系统命令而非复杂API，更稳定
-- 🚀 **开箱即用**：提供交互式工具，一键生成播放
-- 💎 **代码优雅**：遵循KISS、DRY、SOLID原则
+- 🏗️ **模块化设计**：清晰的架构，易于维护和扩展
+- 📚 **完善的文档**：详细的技术文档和开发指南
+- 🔬 **深度研究**：包含 VAD 优化、RNNoise 降噪等技术研究
+- 💎 **代码优雅**：遵循 KISS、DRY、SOLID 原则
+
+---
+
+## 📊 开发进度
+
+### ✅ Phase 1: 基础验证（已完成）
+- ✅ 音频设备配置和测试
+- ✅ LLM 服务验证（DeepSeek API）
+- ✅ TTS 服务验证（Edge-TTS）
+- ✅ 基础对话流程测试
+
+### ✅ Phase 2: ASR 集成（已完成）
+- ✅ Paraformer INT8 模型集成
+- ✅ 中文、英文、混合识别全部优秀
+- ✅ 识别速度快（2-3秒）
+- ✅ 解决录音采样率配置问题
+
+### ✅ Phase 3: VAD 集成（已完成）
+- ✅ Silero VAD 模型集成
+- ✅ 发现并解决录音格式问题（WAV bug）
+- ✅ VAD 优化研究完成
+  - RNNoise 降噪研究
+  - 音量反向特性发现
+  - sherpa-onnx 框架深度分析
+- ✅ 最佳配置确定
+
+### 🚧 Phase 4: 系统集成（进行中）
+- [ ] 实现异步编排逻辑
+- [ ] 端到端集成测试
+- [ ] 实现打断机制
+- [ ] 性能优化
 
 ---
 
 ## 🏗️ 技术架构
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              实时语音助手系统                             │
+│                                                          │
+│  音频捕获 → VAD 检测 → ASR 识别 → LLM 对话 → TTS 合成   │
+│     ↓          ↓          ↓          ↓          ↓       │
+│  AudioCapture → VADDetector → ASREngine → LLMEngine     │
+│                                              ↓           │
+│                                         TTSEngine        │
+│                                              ↓           │
+│                                         AudioPlayer      │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 核心模块
+
+1. **AudioCapture** - 音频捕获模块
+   - 录音设备：`plughw:0,1` (48kHz)
+   - 自动采样率转换：48kHz → 16kHz
+
+2. **VADDetector** - 语音活动检测
+   - 模型：Silero VAD (ONNX)
+   - 框架：sherpa-onnx
+   - 配置：threshold=0.2, min_silence=0.5s
+
+3. **ASREngine** - 语音识别引擎
+   - 模型：Paraformer INT8
+   - 识别准确率：优秀
+   - 响应速度：2-3秒
+
+4. **LLMEngine** - 对话引擎
+   - 模型：DeepSeek
+   - 响应速度：~2秒
+   - 支持流式输出
+
+5. **TTSEngine** - 语音合成引擎
+   - 引擎：Edge-TTS
+   - 支持多种中文语音
+   - 生成速度：~2.7秒
+
+6. **AudioPlayer** - 音频播放器
+   - 播放设备：`hw:ascend310b`
+   - 支持 3.5mm 耳机输出
+
+---
+
+## 🚀 快速开始
+
+### 1. 环境准备
+
+**系统要求：**
+- Orange Pi AI Pro (Ascend 310B)
+- Ubuntu 22.04 (ARM64)
+- Python 3.9+
+- 8GB+ RAM
+
+**安装依赖：**
+```bash
+# 安装系统依赖
+sudo apt update
+sudo apt install -y python3 python3-pip ffmpeg alsa-utils gcc
+
+# 安装 Python 依赖
+pip3 install edge-tts numpy requests
+```
+
+### 2. 配置音频设备
+
+参考 [音频配置完全指南](docs/AUDIO_SETUP.md)
+
+**🚀 一键测试脚本（推荐）：**
+```bash
+# 运行自动化测试脚本
+./scripts/test_audio_48k.sh
+```
+
+该脚本会自动完成：
+- 设置音频参数（Capture、Deviceid、Playback）
+- 录音测试（5秒，48000 Hz RAW 格式）
+- 格式转换（PCM → WAV）
+- 质量验证（检查信号强度）
+- 播放测试（自动播放录音）
+
+**手动测试：**
+```bash
+# 设置音频参数
+amixer set Capture 10
+amixer set Deviceid 2
+amixer set Playback 10
+
+# 测试录音
+arecord -D plughw:0,1 -f S16_LE -r 48000 -c 1 -t raw -d 5 test.pcm
+ffmpeg -f s16le -ar 48000 -ac 1 -i test.pcm -y test.wav
+
+# 测试播放
+aplay -Dhw:ascend310b test.wav
+```
+
+### 3. 测试各模块
+
+**测试音频设备（推荐）：**
+```bash
+# 一键测试录音和播放
+./scripts/test_audio_48k.sh
+```
+
+**测试 ASR 识别（推荐）：**
+```bash
+# 完整的 ASR 识别测试（录音 + 识别）
+python3 scripts/test_asr_recognition.py
+```
+
+**测试 TTS：**
+```bash
+python3 scripts/tts_generate.py "你好，世界" output/test.wav
+aplay -Dhw:ascend310b output/test.wav
+```
+
+**测试 VAD：**
+```bash
+python3 scripts/test_vad.py output/test.wav
+```
+
+### 4. 运行实时语音助手
+
+```bash
+# 启动实时语音助手（Phase 4 完成后可用）
+python3 realtime_assistant_main.py
+```
+
+---
+
+## 📚 文档
+
+### 核心文档
+
+1. **[实时语音助手设计文档](docs/REALTIME_ASSISTANT.md)**
+   - 系统架构设计
+   - 模块功能说明
+   - 技术选型和实现细节
+
+2. **[音频配置完全指南](docs/AUDIO_SETUP.md)** ⭐
+   - Orange Pi 音频设备配置
+   - ⚠️ 音量反向特性说明（重要发现）
+   - 🚀 一键测试脚本（推荐）
+   - 录音和播放测试
+   - 常见问题排查
+
+3. **[音频测试脚本使用指南](docs/audio-test-script-guide.md)** ⭐
+   - 自动化音频测试脚本详细说明
+   - 测试流程和检查项
+   - 故障排查和解决方案
+   - 脚本定制和最佳实践
+
+4. **[ASR 识别测试脚本使用指南](docs/asr-test-script-guide.md)** ⭐ 新增
+   - ASR 语音识别测试工具
+   - 48000 Hz → 16000 Hz 降采样验证
+   - 识别准确率测试
+   - 完整的测试流程和故障排查
+
+5. **[VAD 优化研究报告](docs/vad-optimization-report.md)** ⭐
+   - RNNoise 降噪研究
+   - Silero VAD 深度分析
+   - 能量 VAD 验证
+   - sherpa-onnx 框架解析
+   - 配置优化方案
+
+6. **[项目开发路线图](ROADMAP.md)** ⭐
+   - Phase 1-6 详细规划
+   - 当前进度和下一步方向
+   - 技术债务记录
+   - 里程碑和时间表
+
+7. **[项目内部提示文档](PROJECT_NOTES.md)**
+   - 系统权限信息
+   - VPN 配置和使用
+   - 音频测试规定
+   - 常用命令速查
+
+8. **[文档索引](docs/index.md)**
+   - 所有文档的完整索引
+
+### 阶段完成报告
+
+- [Phase 2 完成报告](docs/phase2-completion-report.md) - ASR 集成
+- [Phase 3 完成报告](docs/phase3-completion-report.md) - VAD 集成
+- [VAD 任务总结报告](docs/vad-task-summary.md) ⭐ 新增
+
+---
+
+## 🔬 技术亮点
+
+### 1. 音量反向特性发现 ⭐
+
+**重大发现：** Orange Pi AI Pro 的音频驱动存在反向特性！
+
+```
+音量值越小，录音信号越强！
+推荐使用音量 1 或 5
+```
+
+详见：[AUDIO_SETUP.md](docs/AUDIO_SETUP.md)
+
+### 2. sherpa-onnx 框架深度分析
+
+深入理解了 sherpa-onnx 与官方 Silero VAD 的差异：
+- C++ 实现，性能极高
+- 专为边缘设备优化
+- 参数与官方实现有差异
+
+详见：[VAD 优化研究报告](docs/vad-optimization-report.md)
+
+### 3. RNNoise 降噪研究
+
+完整的 RNNoise 集成和测试：
+- 结论：不推荐在当前硬件环境使用
+- 原因：信号衰减 53%，反而降低 VAD 检测效果
+
+详见：[VAD 优化研究报告](docs/vad-optimization-report.md)
+
+---
+
+## 🛠️ 开发指南
+
+### 项目结构
+
+```
+EdgeTTSdemo/
+├── realtime_assistant/          # 核心模块
+│   ├── assistant.py             # 主控制器
+│   ├── asr_engine.py            # ASR 引擎
+│   ├── audio_capture.py         # 音频捕获
+│   ├── llm_engine.py            # LLM 引擎
+│   ├── tts_engine.py            # TTS 引擎
+│   ├── vad_detector.py          # VAD 检测器
+│   ├── audio_player.py          # 音频播放器
+│   └── state_machine.py         # 状态机
+├── config/                      # 配置文件
+│   ├── realtime_config.json     # 主配置
+│   ├── asr_config.json          # ASR 配置
+│   └── vad_config.json          # VAD 配置
+├── docs/                        # 文档
+├── models/                      # 模型文件
+├── output/                      # 输出目录
+├── scripts/                     # 辅助脚本
+├── tests/                       # 测试脚本（范本）⭐
+│   ├── test_audio_48k.sh        # 音频设备测试
+│   ├── test_asr_recognition.py  # ASR 识别测试
+│   ├── test_playback.py         # 播放功能测试
+│   └── README.md                # 测试脚本使用指南
+└── realtime_assistant_main.py   # 主程序入口
+```
+
+### 配置文件
+
+**VAD 配置** (`config/vad_config.json`)：
+```json
+{
+  "model": "models/silero_vad.onnx",
+  "threshold": 0.2,
+  "min_silence_duration": 0.5,
+  "min_speech_duration": 0.25,
+  "sample_rate": 16000
+}
+```
+
+**音频配置** (`config/realtime_config.json`)：
+```json
+{
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "device": "plughw:0,1"
+  }
+}
+```
+
+---
+
+## 🎯 下一步计划
+
+### Phase 4: 系统集成
+
+**目标：** 整合所有模块，实现完整的实时语音助手
+
+**待完成任务：**
+1. 主控制器实现 (`assistant.py`)
+2. 状态机实现 (`state_machine.py`)
+3. 音频播放器实现 (`audio_player.py`)
+4. LLM 引擎完善 (`llm_engine.py`)
+5. TTS 引擎完善 (`tts_engine.py`)
+6. 端到端测试
+
+**预计完成时间：** 2026-01-25
+
+详见：[项目开发路线图](ROADMAP.md)
+
+---
+
+## 🤝 贡献指南
+
+### 如何贡献
+
+1. Fork 项目
+2. 创建特性分支
+3. 提交代码
+4. 创建 Pull Request
+
+### 代码规范
+
+- 遵循 PEP 8 Python 代码规范
+- 添加必要的注释和文档字符串
+- 编写单元测试
+- 更新相关文档
+
+---
+
+## 📄 许可证
+
+本项目采用 MIT 许可证。
+
+---
+
+## 📞 联系方式
+
+- **作者：** 哈雷酱（傲娇大小姐工程师）
+- **项目地址：** `/home/HwHiAiUser/Desktop/ai-study/EdgeTTSdemo`
+- **文档位置：** `docs/`
+
+---
+
+**哼，本小姐的项目可是非常完善的！笨蛋们要好好学习哦！(￣▽￣)ノ**
+
+**下一步：开始 Phase 4 系统集成，实现完整的实时语音助手！**
 
 ```
 ┌─────────────────────────────────────────────────────────┐

@@ -207,8 +207,8 @@ class ASREngine:
             while self.recognizer.is_ready(stream):
                 self.recognizer.decode_stream(stream)
 
-            result = self.recognizer.get_result(stream)
-            text = result.text.strip()
+            # get_result() 直接返回字符串
+            text = self.recognizer.get_result(stream).strip()
         else:
             # 离线识别
             stream = self.recognizer.create_stream()
@@ -216,6 +216,7 @@ class ASREngine:
 
             self.recognizer.decode_stream(stream)
             result = stream.result
+            # result 是对象，有 text 属性
             text = result.text.strip()
 
         return text

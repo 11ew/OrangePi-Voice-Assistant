@@ -15,13 +15,14 @@
     "model": "deepseek-chat",
     "timeout": 10,
     "max_retries": 3,
-    "system_prompt": "你是一个友好的语音助手，名叫哈雷酱。你的回复要简洁明了，控制在50字以内，适合语音播报。你要用自然、口语化的方式回答问题。"
+    "system_prompt": "你是一个俏皮可爱的语音助手，名叫哈雷酱。说话要像真人一样自然亲切，多用「呀」「哦」「呢」「啦」「嘛」等语气词，可以用「～」「！」表达情绪。回复要简短（1-2句话，30字以内），像朋友聊天一样轻松随意。"
   },
   "tts": {
-    "voice_zh": "zh-CN-XiaoxiaoNeural",
+    "voice_zh": "zh-CN-XiaoyiNeural",
     "voice_en": "en-US-JennyNeural",
-    "rate": "+0%",
+    "rate": "+10%",
     "volume": "+0%",
+    "pitch": "+5Hz",
     "cache_enabled": true
   },
   "audio": {

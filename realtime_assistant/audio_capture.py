@@ -29,10 +29,17 @@ class AudioCapture:
         self.logger = logging.getLogger("realtime_assistant.audio_capture")
         self.config = config
 
-        self.sample_rate = config.get("sample_rate", 16000)
+        # 硬件采样率（Orange Pi 原生 48000 Hz）
+        self.hardware_sample_rate = 48000
+        # 目标采样率（ASR 需要 16000 Hz）
+        self.target_sample_rate = config.get("sample_rate", 16000)
         self.channels = config.get("channels", 1)
-        self.chunk_size = config.get("chunk_size", 1600)  # 100ms @ 16kHz
-        self.device = config.get("device", "plughw:0,1")  # 默认使用 plughw:0,1
+        # 块大小基于硬件采样率（100ms @ 48kHz = 4800 样本）
+        self.chunk_size = int(self.hardware_sample_rate * 0.1)
+        self.device = config.get("device", "plughw:0,1")
+
+        # 降采样比例
+        self.downsample_ratio = self.hardware_sample_rate // self.target_sample_rate
 
         # 音频队列
         self.audio_queue = queue.Queue()
@@ -41,7 +48,9 @@ class AudioCapture:
         self.is_running = False
 
         self.logger.info("🎙️  音频捕获器初始化完成（arecord 方式）")
-        self.logger.info(f"   - 采样率: {self.sample_rate} Hz")
+        self.logger.info(f"   - 硬件采样率: {self.hardware_sample_rate} Hz")
+        self.logger.info(f"   - 目标采样率: {self.target_sample_rate} Hz")
+        self.logger.info(f"   - 降采样比例: {self.downsample_ratio}:1")
         self.logger.info(f"   - 声道数: {self.channels}")
         self.logger.info(f"   - 块大小: {self.chunk_size} 样本")
         self.logger.info(f"   - 设备: {self.device}")
@@ -63,8 +72,14 @@ class AudioCapture:
 
                 if not chunk:
                     # 如果读取到空数据，说明进程结束了
-                    self.logger.warning("⚠️  arecord 进程意外结束")
-                    break
+                    self.logger.warning("⚠️  arecord 进程意外结束，尝试重启...")
+
+                    # 尝试重启 arecord 进程
+                    if self.is_running:
+                        self._restart_arecord()
+                        continue
+                    else:
+                        break
 
                 # 转换为 numpy 数组
                 audio_data = np.frombuffer(chunk, dtype=np.int16)
@@ -77,6 +92,10 @@ class AudioCapture:
                 # 转换为 float32，范围 [-1.0, 1.0]
                 audio_data = audio_data.astype(np.float32) / 32768.0
 
+                # 降采样：从 48000 Hz 到 16000 Hz（每 3 个样本取 1 个）
+                if self.downsample_ratio > 1:
+                    audio_data = audio_data[::self.downsample_ratio]
+
                 # 放入队列
                 self.audio_queue.put(audio_data)
 
@@ -88,6 +107,40 @@ class AudioCapture:
 
         self.logger.debug("读取线程结束")
 
+    def _restart_arecord(self):
+        """重启 arecord 进程"""
+        try:
+            # 终止旧进程
+            if self.process:
+                try:
+                    self.process.terminate()
+                    self.process.wait(timeout=1.0)
+                except:
+                    pass
+
+            # 启动新进程
+            cmd = [
+                'arecord',
+                '-D', self.device,
+                '-f', 'S16_LE',
+                '-r', str(self.hardware_sample_rate),
+                '-c', str(self.channels),
+                '-t', 'raw'
+            ]
+
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                bufsize=self.chunk_size * 2 * self.channels
+            )
+
+            self.logger.info("✅ arecord 进程已重启")
+
+        except Exception as e:
+            self.logger.error(f"❌ 重启 arecord 失败: {e}")
+            self.is_running = False
+
     def start(self):
         """启动音频捕获"""
         if self.is_running:
@@ -97,17 +150,36 @@ class AudioCapture:
         self.logger.info("🎙️  启动音频捕获...")
 
         try:
+            # 设置音频设备参数（参考官方脚本）
+            import subprocess as sp
+
+            # 设置 Deviceid（指定使用耳机/麦克风）
+            try:
+                sp.run(['amixer', 'set', 'Deviceid', '2'],
+                       check=False, capture_output=True)
+                self.logger.debug("✅ 设置 Deviceid = 2")
+            except Exception as e:
+                self.logger.warning(f"⚠️  设置 Deviceid 失败: {e}")
+
+            # 设置 Capture 音量
+            try:
+                sp.run(['amixer', 'set', 'Capture', '10'],
+                       check=False, capture_output=True)
+                self.logger.debug("✅ 设置 Capture = 10")
+            except Exception as e:
+                self.logger.warning(f"⚠️  设置 Capture 音量失败: {e}")
+
             # 启动 arecord 进程
             # -D: 设备
             # -f: 格式 (S16_LE = signed 16-bit little-endian)
-            # -r: 采样率
+            # -r: 采样率（使用硬件原生 48000 Hz）
             # -c: 声道数
             # -t: 类型 (raw = 原始 PCM 数据)
             cmd = [
                 'arecord',
                 '-D', self.device,
                 '-f', 'S16_LE',
-                '-r', str(self.sample_rate),
+                '-r', str(self.hardware_sample_rate),
                 '-c', str(self.channels),
                 '-t', 'raw'
             ]

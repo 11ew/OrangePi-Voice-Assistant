@@ -135,7 +135,7 @@ class LLMEngine:
             "model": self.model,
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 2000
+            "max_tokens": 100  # 限制回复长度（约50个中文字或30个英文词）
         }
 
         async with self.session.post(

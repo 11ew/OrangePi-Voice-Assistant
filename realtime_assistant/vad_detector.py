@@ -123,6 +123,13 @@ class VADDetector:
         # 弹出已处理的片段
         self.vad.pop()
 
+        # 转换为 numpy array（sherpa-onnx 返回的是 list）
+        if isinstance(samples, list):
+            samples = np.array(samples, dtype=np.float32)
+        elif not isinstance(samples, np.ndarray):
+            # 如果既不是 list 也不是 ndarray，尝试转换
+            samples = np.array(samples, dtype=np.float32)
+
         # 验证语音片段
         if not self._is_valid_speech(samples):
             self.logger.debug("❌ 语音片段验证失败（能量过低或时长过短）")

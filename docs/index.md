@@ -1,181 +1,336 @@
-# 📚 文档索引
+# EdgeTTSdemo 项目文档索引
 
-> **EdgeTTSdemo 实时语音助手系统 - 文档中心**
->
-> 本索引提供项目所有文档的快速访问入口。文档按类型和用途组织，方便查找和使用。
-
----
-
-## 📋 根目录文档
-
-### [AUDIO_SETUP.md](./AUDIO_SETUP.md)
-
-Orange Pi AI Pro 音频配置完全指南。详细说明如何配置录音设备（麦克风）和播放设备（耳机），包括 ALSA 配置、音量设置、设备测试和常见问题排查。这是实时语音助手系统的基础配置文档。
-
-### [phase2-completion-report.md](./phase2-completion-report.md)
-
-Phase 2 完成报告（v1.0），记录 ASR 集成的完整过程。**Phase 2 已完成**：包含 Task 2.1（ASR 模型下载和配置）、Task 2.2（ASR 功能测试）、Task 2.3（录音 + ASR 集成测试）的详细内容、遇到的问题和解决方案、性能数据对比（INT8 vs 完整模型）、最佳实践总结。完成日期：2026-01-18。
-
-### [phase3-completion-report.md](./phase3-completion-report.md)
-
-Phase 3 完成报告（v1.0），记录 VAD 集成的完整过程。**Phase 3 已完成**：包含 Task 3.1（VAD 模型下载和配置）、Task 3.2（VAD 功能测试）、Task 3.3（VAD + 录音集成测试）的详细内容。**关键发现**：发现并解决了 Orange Pi 录音格式 bug（必须使用 RAW 格式），开发了两种 VAD 算法（Silero VAD + 基于能量的 VAD）适应不同环境，成功实现自动语音分割功能（检测到 3 个语音片段）。完成日期：2026-01-18。
-
-### [brownfield-architecture.md](./brownfield-architecture.md)
-
-Brownfield 架构文档（v1.3），记录项目的真实状态。**Phase 1、2、3 已完成更新**：包含关键文件列表、技术栈分析（LLM、TTS、音频设备、ASR、VAD 已验证）、项目结构说明、技术债务清单、已知问题（包括录音格式 bug）、集成点、开发设置和故障排查指南。包含 Phase 1、2、3 完成后的性能数据和下一步行动指南（Phase 4: 系统集成）。
-
-### [implementation-plan.md](./implementation-plan.md)
-
-详细实施计划，提供从头开始重建实时语音助手系统的分步指南。包含 5 个 Phase 的详细任务分解，每个任务都有具体的执行步骤、验收标准和故障处理建议。这是项目实施的操作手册。
-
-### [prd.md](./prd.md)
-
-产品需求文档（PRD），定义项目目标、范围和验收标准。包含当前状态分析、核心功能需求（6 个 Epic）、实施路线图（5 个 Phase）、技术架构、性能指标和风险分析。这是项目的需求规格说明。
-
-### [REALTIME_ASSISTANT.md](./REALTIME_ASSISTANT.md)
-
-实时语音助手系统设计方案。详细描述系统架构、核心模块（VAD、ASR、LLM、TTS）、技术选型、性能指标、使用指南和开发路线图。这是系统的技术设计文档。
+> **作者：** 哈雷酱（傲娇大小姐工程师）
+> **更新日期：** 2026-02-26
 
 ---
 
-## 📖 Stories
+## 📚 核心文档
 
-用户故事文档，描述具体的功能需求和实施细节。
+### 项目规划
 
-### [1.1-audio-device-setup.md](./stories/1.1-audio-device-setup.md)
+- **[PRD - 产品需求文档](prd.md)** ⭐
+  - 项目背景和目标
+  - 功能需求和验收标准
+  - 实施路线图（Phase 1-5）
+  - 当前状态：Phase 3 完成
 
-Story 1.1: 音频设备配置和测试。**状态：Done** ✅ Epic 1（基础设施）的第一个故事，定义音频设备配置的验收标准、技术细节、测试要点、实施步骤和常见问题。包含 4 大类验收标准（共 16 个检查点全部完成）和 8 个详细实施步骤。完成日期：2026-01-18。
+- **[实施计划](implementation-plan.md)**
+  - 详细的实施步骤
+  - 任务分解和时间安排
 
----
+### 架构设计
 
-## 🔍 QA (质量保证)
+- **[Brownfield 架构文档](brownfield-architecture.md)** ⭐
+  - 项目真实状态记录
+  - 技术栈和模块组织
+  - 技术债务和已知问题
+  - 集成点和依赖关系
 
-质量保证相关文档，包括测试报告和质量门控。
-
-### Gates (质量门控)
-
-质量门控文件，记录每个 Story 的质量评审结果。
-
-#### [1.1-audio-device-setup.yml](./qa/gates/1.1-audio-device-setup.yml)
-
-Story 1.1 的质量门控文件。**当前状态：PASS** ✅ 所有验收标准已通过，音频设备配置和测试完成。录音和播放功能正常，音质清晰无杂音。评审人：Quinn，更新时间：2026-01-18 16:45。
-
----
-
-## 📂 文档组织说明
-
-### 文档类型
-
-- **根目录文档**：核心技术文档，包括架构、设计、配置和实施计划
-- **Stories**：用户故事，描述具体的功能需求和实施细节
-- **QA**：质量保证文档，包括测试报告和质量门控
-
-### 文档关系
-
-```
-prd.md (需求)
-    ↓
-brownfield-architecture.md (现状分析)
-    ↓
-implementation-plan.md (实施计划)
-    ↓
-stories/*.md (具体任务)
-    ↓
-qa/gates/*.yml (质量门控)
-```
-
-### 推荐阅读顺序
-
-**新手入门：**
-1. `prd.md` - 了解项目目标和范围
-2. `brownfield-architecture.md` - 了解项目现状
-3. `AUDIO_SETUP.md` - 配置音频设备（第一步）
-4. `implementation-plan.md` - 开始实施
-
-**开发者：**
-1. `brownfield-architecture.md` - 了解技术架构
-2. `REALTIME_ASSISTANT.md` - 了解系统设计
-3. `stories/1.1-audio-device-setup.md` - 开始第一个任务
-4. `implementation-plan.md` - 参考详细步骤
-
-**项目管理：**
-1. `prd.md` - 了解需求和验收标准
-2. `implementation-plan.md` - 了解实施计划
-3. `qa/gates/*.yml` - 跟踪质量状态
-
----
-
-## 🔗 快速链接
-
-### 核心文档
-- [PRD](./prd.md) - 产品需求文档
-- [架构文档](./brownfield-architecture.md) - 项目现状分析
-- [实施计划](./implementation-plan.md) - 详细实施步骤
+- **[系统设计文档](REALTIME_ASSISTANT.md)**
+  - 实时语音助手系统设计
+  - 异步编排架构
+  - 数据流和状态机
 
 ### 配置指南
-- [音频配置](./AUDIO_SETUP.md) - 音频设备配置教程
-- [系统设计](./REALTIME_ASSISTANT.md) - 系统架构设计
 
-### 任务跟踪
-- [Story 1.1](./stories/1.1-audio-device-setup.md) - 音频设备配置任务
-- [质量门控](./qa/gates/1.1-audio-device-setup.yml) - Story 1.1 质量状态
+- **[音频配置完全指南](AUDIO_SETUP.md)** ⭐
+  - Orange Pi 音频设备配置
+  - 🚀 一键测试脚本（推荐）
+  - 录音和播放测试
+  - 常见问题解决方案
+  - ⚠️ 包含 WAV 格式录音 bug 的解决方法
 
----
+- **[音频测试脚本使用指南](audio-test-script-guide.md)** ⭐
+  - 自动化音频测试脚本详细说明
+  - 测试流程和检查项
+  - 故障排查和解决方案
+  - 脚本定制和最佳实践
+  - 完成日期：2026-02-26
 
-## 📊 文档统计
-
-- **总文档数**：9 个 Markdown 文档 + 1 个 YAML 文件
-- **根目录文档**：8 个（包括索引和 Phase 2、Phase 3 报告）
-- **Stories**：1 个（已完成）
-- **质量门控**：1 个（PASS）
-- **完成报告**：3 个（Phase 1、Phase 2、Phase 3）
-
-### 项目进度（2026-01-18 更新）
-
-- ✅ **Phase 1 完成**：音频设备、LLM、TTS 已验证
-- ✅ **Phase 2 完成**：ASR 集成和测试完成（Paraformer INT8）
-- ✅ **Phase 3 完成**：VAD 集成完成（Silero VAD + 能量 VAD）
-- 🔲 **Phase 4 待开始**：系统集成（异步编排、端到端测试、打断机制）
-- 🔲 **Phase 5 待开始**：优化和完善
-- 📊 **完成率**：60% (3/5 个 Phase 已完成)
-
-### Phase 3 关键成果
-
-- ✅ 发现并解决 Orange Pi 录音格式 bug（必须使用 RAW 格式）
-- ✅ 开发两种 VAD 算法（Silero VAD 适合安静环境，能量 VAD 适合有底噪环境）
-- ✅ 成功实现自动语音分割功能（检测到 3 个语音片段）
-- ✅ 详细记录所有问题和解决方案到 `docs/AUDIO_SETUP.md`
+- **[ASR 识别测试脚本使用指南](asr-test-script-guide.md)** ⭐ **新增**
+  - ASR 语音识别测试工具
+  - 48000 Hz → 16000 Hz 降采样验证
+  - 识别准确率测试
+  - 完整的测试流程和故障排查
+  - 完成日期：2026-02-26
 
 ---
 
-## 🔄 文档维护
+## 📊 阶段完成报告
 
-### 更新频率
-- **PRD**：需求变更时更新
-- **架构文档**：技术栈或结构变化时更新
-- **实施计划**：每个 Phase 完成后更新
-- **Stories**：任务状态变化时更新
-- **质量门控**：评审完成后更新
+### Phase 1: 基础验证 ✅
 
-### 维护责任
-- **文档创建者**：哈雷酱（傲娇大小姐工程师）
-- **最后更新**：2026-01-18
-- **索引版本**：v1.0.0
+**状态：** 完成（2026-01-18）
+
+**成果：**
+- ✅ 音频设备配置和测试
+- ✅ LLM 服务验证（DeepSeek API）
+- ✅ TTS 服务验证（Edge-TTS）
+- ✅ 基础对话流程测试
+
+### Phase 2: ASR 集成 ✅
+
+**状态：** 完成（2026-01-18）
+
+**文档：** [Phase 2 完成报告](phase2-completion-report.md)
+
+**成果：**
+- ✅ Paraformer INT8 模型集成
+- ✅ 中文、英文、混合识别全部优秀
+- ✅ 识别速度快（2-3秒）
+- ✅ 解决录音采样率配置问题
+
+### Phase 3: VAD 集成 ✅
+
+**状态：** 完成（2026-01-18）
+
+**文档：** [Phase 3 完成报告](phase3-completion-report.md)
+
+**成果：**
+- ✅ Silero VAD 模型集成
+- ✅ 发现并解决录音格式问题（WAV bug）
+- ✅ 开发基于能量的 VAD 算法
+- ✅ 成功实现自动语音分割
+
+**关键发现：**
+- Orange Pi 录音必须使用 RAW 格式
+- Silero VAD 对底噪敏感
+- 基于能量的 VAD 更适合有底噪环境
+
+### Phase 4: 系统集成 🔲
+
+**状态：** 待开始
+
+**目标：**
+- 异步编排验证
+- 端到端集成测试
+- 打断机制实现
 
 ---
 
-**索引创建者：** 哈雷酱（傲娇大小姐工程师）
-**创建日期：** 2026-01-18
-**最后更新：** 2026-01-18 23:30
-**索引版本：** v1.3 - Phase 3 完成后更新
+## 🔬 技术研究报告
+
+### VAD 优化研究
+
+**文档：** [VAD 优化研究报告](vad-optimization-report.md) ⭐ **新增**
+
+**完成日期：** 2026-01-19
+
+**研究内容：**
+- RNNoise 降噪技术研究
+- Silero VAD 深度分析
+- 能量 VAD 验证
+- sherpa-onnx 框架解析
+- 配置优化方案
+
+**关键发现：**
+1. **音量反向特性**：Orange Pi 音频驱动音量值越小，录音信号越强
+2. **sherpa-onnx vs 官方 Silero VAD**：实现差异和参数限制
+3. **RNNoise 结论**：不推荐在当前硬件环境使用（信号衰减 53%）
+4. **最佳配置**：threshold=0.2, min_silence_duration=0.5s
+
+### VAD 任务总结
+
+**文档：** [VAD 任务总结报告](vad-task-summary.md) ⭐ **新增**
+
+**完成日期：** 2026-01-19
+
+**内容：**
+- 任务完成情况总览
+- 技术研究成果（RNNoise、Silero VAD、能量 VAD）
+- 重要发现（音量反向特性、VPN 使用问题）
+- 配置优化和文档更新
+- 工作量统计和技术收获
+
+### RNNoise 降噪集成
+
+**文档：** [RNNoise 集成报告](rnnoise-integration-report.md)
+
+**状态：** [暂时搁置](rnnoise-status.md)
+
+**结论：**
+- ✅ 技术验证完成
+- ❌ 不适合当前录音设备
+- ⏸️ 等待设备升级后重新评估
+
+**关键发现：**
+- RNNoise 会降低信号强度 51.5%
+- 降噪后 VAD 无法检测语音
+- 基于能量的 VAD 更适合当前场景
+
+### 录音采样率问题修复
+
+**文档：** [录音采样率问题修复报告](audio-capture-sample-rate-fix.md) ⭐ **新增**
+
+**完成日期：** 2026-02-26
+
+**问题：**
+- 语音识别准确率极低（< 10%）
+- 录音产生"魔音"失真效果
+- arecord 进程意外崩溃
+
+**根本原因：**
+- 硬件采样率 48000 Hz，代码使用 16000 Hz
+- 采样率不匹配导致音频失真
+
+**解决方案：**
+- 录音使用硬件原生 48000 Hz
+- 软件层降采样到 16000 Hz（每 3 个样本取 1 个）
+- 创建 ASR 测试脚本验证修复效果
+
+**修复效果：**
+- ✅ 识别准确率提升 9 倍（< 10% → > 90%）
+- ✅ 音频质量完美，无失真
+- ✅ 系统稳定运行，进程不再崩溃
+
+**总结文档：** [2026-02-26 系统问题修复总结](system-fix-summary-2026-02-26.md) ⭐
+
+### 播放采样率问题修复
+
+**文档：** [播放采样率问题修复报告](playback-sample-rate-fix.md) ⭐ **新增**
+
+**完成日期：** 2026-02-26
+
+**问题：**
+- 播放速度快 3 倍（像开了倍速）
+- 内容难以听清
+
+**根本原因：**
+- TTS 生成 16000 Hz，播放设备 48000 Hz
+- 采样率不匹配导致速度异常
+
+**解决方案：**
+- TTS 改为生成 48000 Hz 音频
+- 与播放设备采样率匹配
+
+**修复效果：**
+- ✅ 播放速度正常
+- ✅ 音质清晰
+- ✅ 用户满意
 
 ---
 
-## 💡 使用提示
+## 📖 Story 文档
 
-1. **查找文档**：使用浏览器的搜索功能（Ctrl+F）快速定位
-2. **导航**：点击文档标题直接跳转到对应文件
-3. **更新索引**：添加新文档后，运行 `/index-docs` 命令更新索引
-4. **报告问题**：发现链接失效或描述不准确，请及时反馈
+### Epic 1: 音频设备配置
 
-哼，本小姐创建的索引可是非常专业和详细的！(￣▽￣)ノ
+- **[Story 1.1: 音频设备配置和测试](stories/1.1-audio-device-setup.md)** ✅
+  - 状态：完成
+  - 质量门控：[QA Gate](qa/gates/1.1-audio-device-setup.yml)
+
+---
+
+## 🛠️ 快速开始
+
+### 新手入门
+
+1. **阅读 [README.md](../README.md)**
+   - 项目简介和核心功能
+   - 快速开始指南
+
+2. **配置音频设备**
+   - 参考 [音频配置指南](AUDIO_SETUP.md)
+   - 完成 Story 1.1 的测试
+
+3. **运行基础测试**
+   ```bash
+   # 测试 LLM
+   python3 scripts/deepseek_chat.py "你好"
+   
+   # 测试 TTS
+   python3 scripts/tts_generate.py "测试" output/test.wav
+   
+   # 测试 ASR
+   python3 scripts/speech_to_text.py output/test.wav
+   ```
+
+### 开发者指南
+
+1. **理解架构**
+   - 阅读 [Brownfield 架构文档](brownfield-architecture.md)
+   - 了解各模块的职责和依赖
+
+2. **查看 PRD**
+   - 阅读 [PRD 文档](prd.md)
+   - 了解项目目标和实施计划
+
+3. **参考完成报告**
+   - Phase 2: ASR 集成经验
+   - Phase 3: VAD 集成和问题解决
+
+---
+
+## 🔧 配置文件
+
+### 主配置
+
+- **`config/realtime_config.json`** - 系统主配置
+- **`config/asr_config.json`** - ASR 配置
+- **`config/vad_config.json`** - VAD 配置
+
+### 重要参数
+
+**音频设备：**
+```json
+{
+  "sample_rate": 16000,
+  "channels": 1,
+  "device": "plughw:0,1"
+}
+```
+
+**VAD 配置：**
+```json
+{
+  "threshold": 0.3,
+  "min_silence_duration": 1.5,
+  "min_speech_duration": 0.3,
+  "energy_threshold": 0.002
+}
+```
+
+---
+
+## 📝 内部提示
+
+- **[PROJECT_NOTES.md](../PROJECT_NOTES.md)** ⭐
+  - 系统密码和权限信息
+  - VPN 配置和使用
+  - 音频测试特别规定
+  - 常用命令速查
+
+---
+
+## 🐛 问题排查
+
+### 常见问题
+
+1. **音频无声**
+   - 参考：[AUDIO_SETUP.md](AUDIO_SETUP.md) - 问题排查章节
+
+2. **录音格式问题**
+   - 参考：[Phase 3 报告](phase3-completion-report.md) - 问题 1
+
+3. **VAD 无法分割**
+   - 参考：[Phase 3 报告](phase3-completion-report.md) - 问题 2
+
+4. **ASR 识别失败**
+   - 参考：[Phase 2 报告](phase2-completion-report.md)
+
+---
+
+## 📞 获取帮助
+
+- 查看相关文档的"常见问题"章节
+- 参考 Phase 完成报告中的问题解决方案
+- 查看 [PROJECT_NOTES.md](../PROJECT_NOTES.md) 的快速命令
+
+---
+
+**文档维护者：** 哈雷酱（傲娇大小姐工程师）
+**最后更新：** 2026-02-26
+
+---
+
+**哼，本小姐的文档可是非常完善的！笨蛋们要好好利用哦！(￣▽￣)ノ**

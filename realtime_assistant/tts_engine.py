@@ -148,7 +148,7 @@ class TTSEngine:
         cmd = [
             "ffmpeg",
             "-i", input_file,
-            "-ar", "16000",      # 采样率 16kHz
+            "-ar", "48000",      # 采样率 48kHz（Orange Pi 硬件原生采样率）
             "-ac", "1",          # 单声道
             "-y",                # 覆盖输出文件
             output_file

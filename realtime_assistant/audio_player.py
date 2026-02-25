@@ -79,9 +79,10 @@ class AudioPlayer:
         self.logger.info(f"🔊 播放音频: {audio_file}")
 
         try:
-            # 使用 aplay 播放
+            # 使用 aplay 播放（指定 Orange Pi 播放设备）
             self.current_process = await asyncio.create_subprocess_exec(
                 "aplay",
+                "-Dhw:ascend310b",  # Orange Pi 播放设备
                 "-q",  # 安静模式
                 audio_file,
                 stdout=asyncio.subprocess.PIPE,
@@ -135,6 +136,25 @@ class AudioPlayer:
 
         self.is_running = True
         self.logger.info("🎵 启动播放器...")
+
+        # 设置音频设备参数（参考官方脚本）
+        import subprocess as sp
+
+        # 设置 Deviceid（指定使用耳机/麦克风）
+        try:
+            sp.run(['amixer', 'set', 'Deviceid', '2'],
+                   check=False, capture_output=True)
+            self.logger.debug("✅ 设置 Deviceid = 2")
+        except Exception as e:
+            self.logger.warning(f"⚠️  设置 Deviceid 失败: {e}")
+
+        # 设置 Playback 音量
+        try:
+            sp.run(['amixer', 'set', 'Playback', '10'],
+                   check=False, capture_output=True)
+            self.logger.debug("✅ 设置 Playback = 10")
+        except Exception as e:
+            self.logger.warning(f"⚠️  设置 Playback 音量失败: {e}")
 
         # 启动播放工作线程
         asyncio.create_task(self._play_worker())
