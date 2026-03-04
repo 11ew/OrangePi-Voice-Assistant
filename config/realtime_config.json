@@ -10,7 +10,7 @@
     "num_threads": 4
   },
   "llm": {
-    "api_key": "sk-8729b6bbc81b49bda752005da63185c6",
+    "api_key": "YOUR_DEEPSEEK_API_KEY",
     "api_base": "https://api.deepseek.com/v1",
     "model": "deepseek-chat",
     "timeout": 10,
