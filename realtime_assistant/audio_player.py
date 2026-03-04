@@ -131,30 +131,19 @@ class AudioPlayer:
     async def start(self):
         """启动播放器"""
         if self.is_running:
-            self.logger.warning("⚠️  播放器已在运行")
             return
 
         self.is_running = True
-        self.logger.info("🎵 启动播放器...")
+        self.logger.info("🔊 音频播放器已启动")
 
-        # 设置音频设备参数（参考官方脚本）
+        # 设置音频设备参数（并行优化：提前设置）
         import subprocess as sp
-
-        # 设置 Deviceid（指定使用耳机/麦克风）
         try:
-            sp.run(['amixer', 'set', 'Deviceid', '2'],
-                   check=False, capture_output=True)
-            self.logger.debug("✅ 设置 Deviceid = 2")
+            sp.run(['amixer', 'set', 'Deviceid', '2'], check=False, capture_output=True)
+            sp.run(['amixer', 'set', 'Playback', '10'], check=False, capture_output=True)
+            self.logger.debug("✅ 音频设备参数已设置")
         except Exception as e:
-            self.logger.warning(f"⚠️  设置 Deviceid 失败: {e}")
-
-        # 设置 Playback 音量
-        try:
-            sp.run(['amixer', 'set', 'Playback', '10'],
-                   check=False, capture_output=True)
-            self.logger.debug("✅ 设置 Playback = 10")
-        except Exception as e:
-            self.logger.warning(f"⚠️  设置 Playback 音量失败: {e}")
+            self.logger.warning(f"⚠️  设置音频参数失败: {e}")
 
         # 启动播放工作线程
         asyncio.create_task(self._play_worker())

@@ -55,10 +55,24 @@ class LLMEngine:
         self.logger.info(f"   - 超时: {self.timeout}s")
         self.logger.info(f"   - 最大重试: {self.max_retries}")
 
+        # 预热连接（并行优化）
+        self._warmup_task = None
+
     async def _ensure_session(self):
         """确保 HTTP 会话存在"""
         if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession()
+            # 创建会话时设置连接池和超时
+            timeout = aiohttp.ClientTimeout(total=self.timeout, connect=5)
+            connector = aiohttp.TCPConnector(limit=10, limit_per_host=5)
+            self.session = aiohttp.ClientSession(timeout=timeout, connector=connector)
+
+    async def warmup(self):
+        """预热 LLM 连接（并行优化）"""
+        try:
+            await self._ensure_session()
+            self.logger.debug("🔥 LLM 连接预热完成")
+        except Exception as e:
+            self.logger.warning(f"⚠️  LLM 连接预热失败: {e}")
 
     async def chat_async(self, user_message: str, use_history: bool = False) -> str:
         """
@@ -116,15 +130,16 @@ class LLMEngine:
 
         return self._get_fallback_response(user_message)
 
-    async def _call_api(self, messages: List[Dict[str, str]]) -> str:
+    async def _call_api(self, messages: List[Dict[str, str]], stream: bool = False):
         """
         调用 DeepSeek API
 
         参数:
             messages: 消息列表
+            stream: 是否使用流式输出
 
         返回:
-            助手回复
+            助手回复（字符串）或流式生成器
         """
         url = f"{self.api_base}/chat/completions"
         headers = {
@@ -135,21 +150,108 @@ class LLMEngine:
             "model": self.model,
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 100  # 限制回复长度（约50个中文字或30个英文词）
+            "max_tokens": 100,  # 限制回复长度（约50个中文字或30个英文词）
+            "stream": stream
         }
 
-        async with self.session.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=aiohttp.ClientTimeout(total=self.timeout)
-        ) as response:
+        if not stream:
+            # 非流式模式
+            async with self.session.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=self.timeout)
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise Exception(f"API 返回错误: {response.status}, {error_text}")
+
+                result = await response.json()
+                return result["choices"][0]["message"]["content"].strip()
+        else:
+            # 流式模式
+            return self._stream_api(url, headers, payload)
+
+    async def _stream_api(self, url: str, headers: dict, payload: dict):
+        """
+        流式调用 API（流式处理优化）
+
+        参数:
+            url: API URL
+            headers: 请求头
+            payload: 请求体
+
+        生成:
+            流式文本片段
+        """
+        import json
+
+        async with self.session.post(url, headers=headers, json=payload, timeout=aiohttp.ClientTimeout(total=30)) as response:
             if response.status != 200:
                 error_text = await response.text()
                 raise Exception(f"API 返回错误: {response.status}, {error_text}")
 
-            result = await response.json()
-            return result["choices"][0]["message"]["content"].strip()
+            # 逐行读取流式响应（SSE 格式）
+            buffer = b""
+            async for chunk in response.content.iter_any():
+                buffer += chunk
+
+                # 按行分割
+                while b'\n' in buffer:
+                    line, buffer = buffer.split(b'\n', 1)
+                    line = line.decode('utf-8').strip()
+
+                    if not line or line == "data: [DONE]":
+                        continue
+
+                    if line.startswith("data: "):
+                        try:
+                            data = json.loads(line[6:])  # 去掉 "data: " 前缀
+                            if "choices" in data and len(data["choices"]) > 0:
+                                delta = data["choices"][0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    yield content
+                        except json.JSONDecodeError:
+                            continue
+
+    async def chat_stream_async(self, user_message: str, use_history: bool = False):
+        """
+        流式对话（流式处理优化）
+
+        参数:
+            user_message: 用户消息
+            use_history: 是否使用对话历史
+
+        生成:
+            流式文本片段
+        """
+        await self._ensure_session()
+
+        # 构建消息列表
+        messages = [{"role": "system", "content": self.system_prompt}]
+
+        if use_history and self.conversation_history:
+            messages.extend(self.conversation_history)
+
+        messages.append({"role": "user", "content": user_message})
+
+        # 流式调用 API
+        full_response = ""
+        async for chunk in await self._call_api(messages, stream=True):
+            full_response += chunk
+            yield chunk
+
+        # 更新对话历史
+        if use_history:
+            self.conversation_history.append({"role": "user", "content": user_message})
+            self.conversation_history.append({"role": "assistant", "content": full_response})
+
+            # 限制历史长度
+            if len(self.conversation_history) > 20:
+                self.conversation_history = self.conversation_history[-20:]
+
+        self.logger.info(f"💬 LLM 流式回复完成: {full_response}")
 
     def _get_fallback_response(self, user_message: str) -> str:
         """

@@ -27,9 +27,10 @@ ENV/
 .venv
 
 # ==================== 音频文件 ====================
-# 生成的音频文件（可选：如果想保留某些文件，注释掉对应行）
-output/*.wav
-output/*.mp3
+# 生成的音频文件
+output/**/*.wav
+output/**/*.mp3
+output/**/*.pcm
 output/*_temp.mp3
 output/batch_*/
 output/*.txt
@@ -96,6 +97,11 @@ kernel_meta/
 *.tar.gz
 *.zip
 
+# ==================== Claude / IDE ====================
+.claude/
+.bmad-core/
+
 # ==================== 其他 ====================
 # 检查结果文件
 check_result.json
+fusion_result.json

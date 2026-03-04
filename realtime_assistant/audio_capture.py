@@ -65,21 +65,61 @@ class AudioCapture:
 
         self.logger.debug(f"读取线程启动，每次读取 {bytes_per_chunk} 字节")
 
+        # 设置 stdout 为非阻塞模式（避免阻塞导致进程崩溃）
+        import fcntl
+        import os
+        try:
+            fd = self.process.stdout.fileno()
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+            self.logger.debug("✅ 设置 stdout 为非阻塞模式")
+        except Exception as e:
+            self.logger.warning(f"⚠️  设置非阻塞模式失败: {e}")
+
+        consecutive_empty_reads = 0  # 连续空读次数
+        max_empty_reads = 10  # 最大连续空读次数
+
         try:
             while self.is_running:
-                # 从 arecord 的 stdout 读取数据
-                chunk = self.process.stdout.read(bytes_per_chunk)
+                try:
+                    # 从 arecord 的 stdout 读取数据（非阻塞）
+                    chunk = self.process.stdout.read(bytes_per_chunk)
 
-                if not chunk:
-                    # 如果读取到空数据，说明进程结束了
-                    self.logger.warning("⚠️  arecord 进程意外结束，尝试重启...")
+                    if not chunk:
+                        consecutive_empty_reads += 1
 
-                    # 尝试重启 arecord 进程
-                    if self.is_running:
-                        self._restart_arecord()
+                        # 检查进程是否还活着
+                        if self.process.poll() is not None:
+                            # 进程已退出
+                            self.logger.warning("⚠️  arecord 进程已退出，尝试重启...")
+                            if self.is_running:
+                                self._restart_arecord()
+                                consecutive_empty_reads = 0
+                                continue
+                            else:
+                                break
+
+                        # 如果连续多次空读，可能是管道问题
+                        if consecutive_empty_reads >= max_empty_reads:
+                            self.logger.warning(f"⚠️  连续 {max_empty_reads} 次空读，检查进程状态...")
+                            if not self._check_process_health():
+                                self._restart_arecord()
+                                consecutive_empty_reads = 0
+                                continue
+
+                        # 短暂休眠，避免 CPU 占用过高
+                        import time
+                        time.sleep(0.01)
                         continue
-                    else:
-                        break
+
+                    # 成功读取数据，重置计数器
+                    consecutive_empty_reads = 0
+
+                except BlockingIOError:
+                    # 非阻塞模式下，没有数据可读
+                    import time
+                    time.sleep(0.01)
+                    continue
 
                 # 转换为 numpy 数组
                 audio_data = np.frombuffer(chunk, dtype=np.int16)
@@ -107,6 +147,29 @@ class AudioCapture:
 
         self.logger.debug("读取线程结束")
 
+    def _check_process_health(self) -> bool:
+        """
+        检查 arecord 进程健康状态
+
+        返回:
+            True 表示健康，False 表示需要重启
+        """
+        if not self.process:
+            return False
+
+        # 检查进程是否还在运行
+        if self.process.poll() is not None:
+            return False
+
+        # 检查 stdout 是否还可用
+        try:
+            if self.process.stdout.closed:
+                return False
+        except:
+            return False
+
+        return True
+
     def _restart_arecord(self):
         """重启 arecord 进程"""
         try:
@@ -132,7 +195,7 @@ class AudioCapture:
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
-                bufsize=self.chunk_size * 2 * self.channels
+                bufsize=self.chunk_size * 2 * self.channels * 10  # 增大缓冲区 10 倍
             )
 
             self.logger.info("✅ arecord 进程已重启")
@@ -190,7 +253,7 @@ class AudioCapture:
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
-                bufsize=self.chunk_size * 2 * self.channels
+                bufsize=self.chunk_size * 2 * self.channels * 10  # 增大缓冲区 10 倍
             )
 
             # 启动读取线程

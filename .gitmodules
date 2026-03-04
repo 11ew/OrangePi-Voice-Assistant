@@ -1,0 +1,3 @@
+[submodule "realtime_assistant/rnnoise_python"]
+	path = realtime_assistant/rnnoise_python
+	url = https://github.com/Shb742/rnnoise_python.git

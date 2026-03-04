@@ -50,6 +50,58 @@ class TTSEngine:
         self.logger.info(f"   - 英文语音: {self.voice_en}")
         self.logger.info(f"   - 缓存: {'启用' if self.cache_enabled else '禁用'}")
 
+    def _split_sentences(self, text: str) -> list:
+        """
+        分句处理（流式处理优化）
+
+        参数:
+            text: 文本
+
+        返回:
+            句子列表
+        """
+        import re
+        # 按照中文和英文的句子分隔符分割
+        sentences = re.split(r'([。！？\.!?]+)', text)
+
+        # 重新组合句子和标点
+        result = []
+        for i in range(0, len(sentences) - 1, 2):
+            sentence = sentences[i] + (sentences[i + 1] if i + 1 < len(sentences) else '')
+            sentence = sentence.strip()
+            if sentence:
+                result.append(sentence)
+
+        # 处理最后一个句子（如果没有标点）
+        if len(sentences) % 2 == 1 and sentences[-1].strip():
+            result.append(sentences[-1].strip())
+
+        return result if result else [text]
+
+    async def synthesize_stream_async(self, text: str):
+        """
+        流式合成语音（流式处理优化）
+
+        参数:
+            text: 要合成的文本
+
+        生成:
+            (句子文本, WAV文件路径) 元组
+        """
+        # 分句
+        sentences = self._split_sentences(text)
+        self.logger.info(f"🎵 流式合成 {len(sentences)} 个句子")
+
+        for i, sentence in enumerate(sentences):
+            if not sentence.strip():
+                continue
+
+            self.logger.debug(f"   [{i+1}/{len(sentences)}] {sentence[:20]}...")
+
+            # 合成单个句子
+            wav_file = await self.synthesize_async(sentence)
+            yield (sentence, wav_file)
+
     def _detect_language(self, text: str) -> str:
         """
         检测文本语言
