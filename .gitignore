@@ -101,6 +101,9 @@ kernel_meta/
 .claude/
 .bmad-core/
 
+# ==================== 配置文件（含密钥）====================
+config/realtime_config.json
+
 # ==================== 其他 ====================
 # 检查结果文件
 check_result.json
